@@ -73,6 +73,7 @@ public slots:
     void clearDetailsBrowser();
     void onAdditionalProgressStatusChanged(const QString &status);
     void setImageFromFileName(const QString &fileName, const QString &url);
+    void replaceLastDetailLine(const QString &text);
 
 private:
     QProgressBar *m_progressBar;

@@ -47,6 +47,7 @@
 #include "licenseoperation.h"
 #include "settingsoperation.h"
 #include "consumeoutputoperation.h"
+#include "renesascustomoperation.h"
 #include "loggingutils.h"
 
 #ifdef IFW_LIB7Z
@@ -101,6 +102,7 @@ void QInstaller::init()
     factory.registerUpdateOperation<MinimumProgressOperation>(QLatin1String("MinimumProgress"));
     factory.registerUpdateOperation<LicenseOperation>(QLatin1String("License"));
     factory.registerUpdateOperation<ConsumeOutputOperation>(QLatin1String("ConsumeOutput"));
+    factory.registerUpdateOperation<RenesasCustomOperation>(QLatin1String("RenesasCustom"));
     factory.registerUpdateOperation<SettingsOperation>(QLatin1String("Settings"));
 
     FileDownloaderFactory::setFollowRedirects(true);
