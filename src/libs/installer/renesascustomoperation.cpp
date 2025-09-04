@@ -74,23 +74,34 @@ bool RenesasCustomOperation::performOperation()
         return false;
     }
 
-    const QString keyName = arguments().at(0);
-    const QString program = arguments().at(1);
-    const QStringList args = arguments().mid(2);
+    const QString beforeOperationMessage = arguments().at(0);
+    const QString afterOperationMessage = arguments().at(1);
+    const QString keyName = arguments().at(2);
+    const QString program = arguments().at(3);
+    const QStringList args = arguments().mid(4);
+    QString forceExit = QStringLiteral("True");
+
+    QFileInfo fileInfo(program);
+    QString baseName = fileInfo.fileName().toLower();
+    if (baseName == QStringLiteral("tar") || baseName == QStringLiteral("powershell")) {
+        // qDebug() << "Valid tar program detected:" << program;
+        forceExit = QStringLiteral("False");
+    }
 
     QProcess process;
     process.setProcessChannelMode(QProcess::MergedChannels);
     
-    const QString message = tr("Download with command: %1 %2")
-                                  .arg(program, args.join(QLatin1Char(' ')));
+    const QString message = tr("Run %1 with command: %2 %3")
+                                  .arg(program, program, args.join(QLatin1Char(' ')));
     ProgressCoordinator::instance()->emitDetailTextChanged(message);
+    ProgressCoordinator::instance()->emitDetailTextChanged(beforeOperationMessage);
     ProgressCoordinator::instance()->emitDetailTextChanged(tr("some text will not appear")); // W/A
 
     QString finalOutput;
 
     // When data arrives, push that chunk into an installer key.
     // The JS controller will listen to installer.valueChanged and append to the UI.
-    QObject::connect(&process, &QProcess::readyRead, [core, keyName, &process, &finalOutput]() {
+    QObject::connect(&process, &QProcess::readyRead, [core, &process, &finalOutput]() {
         QByteArray chunk = process.readAll();
         if (!chunk.isEmpty()) {
             // qDebug() << "Chunk is:" << chunk;
@@ -98,28 +109,23 @@ bool RenesasCustomOperation::performOperation()
             // send *only this chunk* so controller can append it
             // ProgressCoordinator::instance()->emitDetailTextChanged(tr("__CLEAR__"));
             QString text = QString::fromLocal8Bit(chunk);
+            // qDebug() << "text before Normalize:" << text;
+            // Normalize all line endings to '\n'
+            text.replace(QLatin1String("\r\n"), QLatin1String("\n"));
+            text.replace(QLatin1String("\r"), QLatin1String("\n"));
             // split chunk into lines, keep only non-empty
             QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-            lines = text.split(QLatin1Char('\r'), Qt::SkipEmptyParts);
+            // lines = lines.split(QLatin1Char('\r'), Qt::SkipEmptyParts);
             if (!lines.isEmpty()) {
+                // qDebug() << "lines is:" << lines;
                 // only update the last line from this chunk
                 QString lastLine = lines.last();
                 ProgressCoordinator::instance()->replaceDetailText(lastLine);
-                core->setValue(keyName, lastLine);
             }
         }
     });
     QObject::connect(&process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-        [core, keyName, &finalOutput]() {
-            // // Split finalOutput into lines
-            // QStringList lines = finalOutput.split(QLatin1Char('\r'), Qt::SkipEmptyParts);
-            // QString lastLine;
-            // if (!lines.isEmpty()) {
-            //     lastLine = lines.last().trimmed(); // remove trailing whitespace
-            // } else {
-            //     lastLine = tr("No output received.");
-            // }
-            // qDebug() << "lastLine detected: " << lastLine;
+        [core, afterOperationMessage, &finalOutput]() {
             // Filter out empty or whitespace-only lines
             QStringList rawLines = finalOutput.split(QLatin1Char('\r'), Qt::KeepEmptyParts);
             QStringList lines;
@@ -137,15 +143,11 @@ bool RenesasCustomOperation::performOperation()
             }
             qDebug() << "lastLine detected: " << lastLine;
             // Emit the last line only
-            ProgressCoordinator::instance()->emitDetailTextChanged(tr("Final status:"));
-            ProgressCoordinator::instance()->emitDetailTextChanged(lastLine);
-            ProgressCoordinator::instance()->emitDetailTextChanged(tr("Download completed!!!!"));
+            // ProgressCoordinator::instance()->emitDetailTextChanged(tr("Final status:"));
+            // ProgressCoordinator::instance()->emitDetailTextChanged(lastLine);
+            ProgressCoordinator::instance()->emitDetailTextChanged(afterOperationMessage);
             // Now the process is done — safe to emit final output
     });
-    // ProgressCoordinator::instance()->emitDetailTextChanged(tr("Downnoad compnete"));
-    // Announce start (also sent to UI via same key)
-    core->setValue(keyName, tr("Starting: %1 %2")
-                                 .arg(program, args.join(QLatin1Char(' '))));
 
     process.start(program, args);
     if (!process.waitForStarted(5000)) {
@@ -159,56 +161,15 @@ bool RenesasCustomOperation::performOperation()
         process.waitForFinished(100);
         QCoreApplication::processEvents();
     }
-
-    // final flush
-    QByteArray remaining = process.readAll();
-    if (!remaining.isEmpty()) {
-        core->setValue(keyName, QString::fromLocal8Bit(remaining));
-    }
-
     // signal finish by setting a separate key (optional, makes it easy for JS to detect end)
     core->setValue(keyName + QLatin1String(":exit"), QString::number(process.exitCode()));
+    // core->setValue(QLatin1String("RenesasCheckLine:exit"), lastLine);
 
-    return (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0);
-
-    // QObject::connect(&process, &QProcess::readyReadStandardOutput, [&process]() {
-    //     QByteArray data = process.readAllStandardOutput();
-    //     const QList<QByteArray> lines = data.split('\n');
-    //     for (const QByteArray &line : lines) {
-    //         if (!line.trimmed().isEmpty())
-    //             qCDebug(QInstaller::lcInstallerInstallLog).noquote() << QString::fromLocal8Bit(line);
-    //     }
-    // });
-
-    // qCDebug(QInstaller::lcInstallerInstallLog) << "Starting:" << program << args;
-    // process.start(program, args);
-
-    // if (!process.waitForStarted(5000)) {
-    //     setError(UserDefinedError);
-    //     setErrorString(QString::fromLatin1("Failed to start %1").arg(program));
-    //     return false;
-    // }
-
-    // // Keep pumping until finished
-    // while (!process.waitForFinished(100)) {
-    //     QCoreApplication::processEvents();
-    // }
-
-
-    // // Final flush
-    // QByteArray remaining = process.readAllStandardOutput();
-    // if (!remaining.isEmpty())
-    //     qCDebug(QInstaller::lcInstallerInstallLog).noquote() << QString::fromLocal8Bit(remaining);
-
-    // if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
-    //     setError(UserDefinedError);
-    //     setErrorString(QString::fromLatin1("Failed to start %1").arg(program));
-    //     return false;
-    // }
-
-    // // // Optional: save output key
-    // packageManager()->setValue(keyName, QString::fromLocal8Bit(remaining));
-    // return true;
+    if (forceExit == QStringLiteral("False")) {
+        return true;
+    } else {
+        return (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0);
+    }
 }
 
 
