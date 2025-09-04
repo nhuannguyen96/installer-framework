@@ -88,6 +88,11 @@ void ProgressCoordinator::reset()
     emit detailTextResetNeeded();
 }
 
+void ProgressCoordinator::reset1()
+{
+    m_installationLabelText.clear();
+}
+
 void ProgressCoordinator::registerPartProgress(QObject *sender, const char *signal, double partProgressSize)
 {
     Q_ASSERT(sender);
@@ -322,4 +327,9 @@ void ProgressCoordinator::printProgressPercentage(int progress)
 void ProgressCoordinator::printProgressMessage(const QString &message)
 {
     qCDebug(QInstaller::lcInstallerInstallLog).nospace().noquote() << message;
+}
+
+void ProgressCoordinator::replaceDetailText(const QString &text)
+{
+    emit detailTextReplaced(text);
 }

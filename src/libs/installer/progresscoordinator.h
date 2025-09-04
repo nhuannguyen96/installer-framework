@@ -58,6 +58,7 @@ public:
 
 public slots:
     void reset();
+    void reset1();
     void setUndoMode();
 
     QString labelText() const;
@@ -75,11 +76,13 @@ public slots:
     void emitAdditionalProgressStatus(const QString &status);
     void printProgressPercentage(int progress);
     void printProgressMessage(const QString &message);
+    void replaceDetailText(const QString &text);
 
 signals:
     void detailTextChanged(const QString &text);
     void detailTextResetNeeded();
     void additionalProgressStatusChanged(const QString &status);
+    void detailTextReplaced(const QString &text);
 
 protected:
     explicit ProgressCoordinator(QObject *parent);

@@ -326,3 +326,51 @@ void PerformInstallationForm::setImageFromFileName(const QString &fileName, cons
             QString::fromLatin1("Failed to load image '%1' : %2.").arg(imagePath, reader.errorString());
     }
 }
+
+// void PerformInstallationForm::replaceLastDetailLine(const QString &text)
+// {
+//     QTextCursor cursor(m_detailsBrowser->document());
+//     cursor.movePosition(QTextCursor::End);
+//     cursor.select(QTextCursor::BlockUnderCursor);  // select the last line
+//     cursor.removeSelectedText();
+//     cursor.insertText(text);
+// }
+// void PerformInstallationForm::replaceLastDetailLine(const QString &text)
+// {
+//     QTextCursor cursor(m_detailsBrowser->document());
+
+//     // Go to end and select the last block (the current line)
+//     cursor.movePosition(QTextCursor::End);
+//     cursor.select(QTextCursor::BlockUnderCursor);
+
+//     cursor.insertText(text);
+//     // Replace it with new text
+//     cursor.removeSelectedText();
+
+//     // Auto scroll to bottom so updates stay visible
+//     m_detailsBrowser->verticalScrollBar()->setValue(
+//         m_detailsBrowser->verticalScrollBar()->maximum());
+// }
+void PerformInstallationForm::replaceLastDetailLine(const QString &text)
+{
+    QTextDocument *doc = m_detailsBrowser->document();
+    QTextCursor cursor(doc);
+
+    // Move to the end of the document
+    cursor.movePosition(QTextCursor::End);
+
+    // Move to the start of the last block and select it
+    cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
+
+    // Remove the selected text (the last line)
+    cursor.removeSelectedText();
+
+    // Insert the new text WITHOUT triggering a new block
+    cursor.insertText(text);
+
+    // Scroll to bottom
+    m_detailsBrowser->verticalScrollBar()->setValue(
+        m_detailsBrowser->verticalScrollBar()->maximum());
+}
+
+

@@ -69,6 +69,7 @@ HEADERS += packagemanagercore.h \
     qinstallerglobal.h \
     qtpatch.h \
     consumeoutputoperation.h \
+    renesascustomoperation.h\
     replaceoperation.h \
     linereplaceoperation.h \
     copydirectoryoperation.h \
@@ -177,6 +178,7 @@ SOURCES += packagemanagercore.cpp \
     componentmodel.cpp \
     qtpatch.cpp \
     consumeoutputoperation.cpp \
+    renesascustomoperation.cpp \
     replaceoperation.cpp \
     linereplaceoperation.cpp \
     copydirectoryoperation.cpp \

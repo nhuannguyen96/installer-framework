@@ -2707,6 +2707,30 @@ void ReadyForInstallationPage::entering()
     bool componentsOk = packageManagerCore()->recalculateAllComponents();
     const QString htmlOutput = packageManagerCore()->componentResolveReasons();
 
+
+    // QString customSummary;
+    // customSummary += QLatin1String("<b>Components selected:</b><br/>");
+    // qint64 totalSize = 0;
+    // const QList<Component*> comps = packageManagerCore()->components();
+    // for (Component *c : comps) {
+    //     if (c->isSelected()) {
+    //         // qint64 bytes = c->installedSize();   // in bytes
+    //         // double mb = bytes / (1024.0 * 1024.0);
+    //         customSummary += QLatin1String("• ") + c->name()
+    //                        + QLatin1String(" — ")
+    //                     //    + QString::number(mb, 'f', 1)
+    //                        + QLatin1String(" 10 MB<br/>");
+    //         // totalSize += bytes;
+    //     }
+    // }
+    // double totalMB = totalSize / (1024.0 * 1024.0);
+    // customSummary += QLatin1String("<br/><b>Total required space:</b> ")
+    //                + QString::number(totalMB, 'f', 1)
+    //                + QLatin1String(" MB");
+    // qCDebug(QInstaller::lcInstallerInstallLog).noquote() << htmlToString(htmlOutput);
+    // m_taskDetailsBrowser->setHtml(customSummary);
+
+
     qCDebug(QInstaller::lcInstallerInstallLog).noquote() << htmlToString(htmlOutput);
     m_taskDetailsBrowser->setHtml(htmlOutput);
     m_taskDetailsBrowser->setVisible(!componentsOk || LoggingHandler::instance().isVerbose());
@@ -2789,6 +2813,8 @@ PerformInstallationPage::PerformInstallationPage(PackageManagerCore *core)
         m_performInstallationForm, &PerformInstallationForm::clearDetailsBrowser);
     connect(m_performInstallationForm, &PerformInstallationForm::showDetailsChanged,
             this, &PerformInstallationPage::toggleDetailsWereChanged);
+    connect(ProgressCoordinator::instance(), &ProgressCoordinator::detailTextReplaced,
+        m_performInstallationForm, &PerformInstallationForm::replaceLastDetailLine);
 
     connect(core, &PackageManagerCore::installationStarted,
             this, &PerformInstallationPage::installationStarted);
